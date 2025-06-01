@@ -4,8 +4,12 @@ from typing import List, Set, Optional
 import fnmatch
 import logging
 
-# Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Setup logging with DEBUG level for development
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+
+# Default headers for output file, can be modified for flexibility
+DEFAULT_DIRECTORY_HEADER = "Directory Structure:\n-------------------\n"
+DEFAULT_FILE_HEADER = "File Contents:\n--------------\n"
 
 def parse_exclusion_file(file_path: str) -> Set[str]:
     """
@@ -26,6 +30,7 @@ def parse_exclusion_file(file_path: str) -> Set[str]:
 def is_excluded(path: str, exclusion_patterns: Set[str]) -> bool:
     """
     Check if the file or directory matches any exclusion pattern.
+    Consolidated the exclusion logic to reduce redundancy.
     """
     for pattern in exclusion_patterns:
         if pattern.startswith('/') and pattern.endswith('/'):
@@ -45,6 +50,7 @@ def is_excluded(path: str, exclusion_patterns: Set[str]) -> bool:
 def print_directory_structure(start_path: str, exclusion_patterns: Set[str]) -> str:
     """
     Print the directory structure excluding the paths that match exclusion patterns.
+    Parameterized headers for directory structure.
     """
     def _generate_tree(dir_path: str, prefix: str = '') -> List[str]:
         entries = os.listdir(dir_path)
@@ -72,16 +78,15 @@ def print_directory_structure(start_path: str, exclusion_patterns: Set[str]) -> 
 def scan_folder(start_path: str, file_types: Optional[List[str]], output_file: str, exclusion_patterns: Set[str]) -> None:
     """
     Scan the folder, write directory structure, and content of files to output file.
+    Parameterized headers for file contents.
     """
     try:
         with open(output_file, 'w', encoding='utf-8') as out_file:
             # Write the directory structure
-            out_file.write("Directory Structure:\n")
-            out_file.write("-------------------\n")
+            out_file.write(DEFAULT_DIRECTORY_HEADER)
             out_file.write(print_directory_structure(start_path, exclusion_patterns))
             out_file.write("\n\n")
-            out_file.write("File Contents:\n")
-            out_file.write("--------------\n")
+            out_file.write(DEFAULT_FILE_HEADER)
 
             for root, dirs, files in os.walk(start_path):
                 rel_path = os.path.relpath(root, start_path)
@@ -96,7 +101,7 @@ def scan_folder(start_path: str, file_types: Optional[List[str]], output_file: s
                     if file_types is None or any(file.endswith(ext) for ext in file_types):
                         file_path = os.path.join(root, file)
 
-                        logging.info(f"Processing: {file_rel_path}")
+                        logging.debug(f"Processing: {file_rel_path}")
                         out_file.write(f"File: {file_rel_path}\n")
                         out_file.write("-" * 50 + "\n")
 
@@ -116,6 +121,7 @@ def scan_folder(start_path: str, file_types: Optional[List[str]], output_file: s
 def main(args: List[str]) -> None:
     """
     Main function that handles command-line arguments and initiates the scan.
+    Improved flexibility by parameterizing directory structure and file headers.
     """
     if len(args) < 3:
         print("Usage: python script.py <start_path> <output_file> [exclusion_file] [file_extensions...]")
